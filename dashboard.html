@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ResQ Band | Emergency Dashboard</title>
+  <style>
+    :root { --ink: #17221e; --muted: #6e7a74; --paper: #eef2ed; --card: #fff; --line: #dce5dd; --green: #19875c; --green-soft: #ddf5e7; --red: #d95243; --yellow: #f4c95d; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: "Trebuchet MS", "Segoe UI", sans-serif; }
+    header { padding: 28px clamp(22px, 6vw, 90px); border-bottom: 1px solid var(--line); background: #f7faf5; display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+    .brand { font-weight: 800; letter-spacing: -.03em; font-size: 20px; } .brand span { color: var(--green); }
+    .header-note { color: var(--muted); font-size: 12px; }
+    .page { max-width: 1240px; padding: 58px clamp(22px, 6vw, 90px); margin: auto; }
+    .eyebrow { color: var(--green); text-transform: uppercase; letter-spacing: .16em; font-size: 11px; font-weight: 700; }
+    h1 { font-size: clamp(38px, 5vw, 64px); line-height: .98; letter-spacing: -.06em; margin: 18px 0 42px; max-width: 600px; }
+    .topline { display: flex; justify-content: space-between; align-items: end; gap: 20px; }
+    .clock { color: var(--muted); font-size: 13px; text-align: right; }
+    .grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 20px; }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: clamp(22px, 3vw, 34px); }
+    .panel h2 { margin: 0 0 8px; font-size: 21px; letter-spacing: -.03em; }
+    .panel p { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 0; }
+    .tap-panel { min-height: 312px; display: flex; flex-direction: column; justify-content: space-between; }
+    .tap-icon { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 50%; color: var(--green); background: var(--green-soft); font-size: 29px; margin: 28px 0 16px; }
+    button, .map-link { display: inline-flex; justify-content: center; align-items: center; gap: 8px; border: 0; border-radius: 9px; padding: 14px 18px; font: inherit; font-weight: 700; cursor: pointer; text-decoration: none; }
+    .tap { background: var(--green); color: #fff; width: 100%; } button:hover { filter: brightness(.97); transform: translateY(-1px); }
+    .patient { margin-top: 20px; display: none; border-top: 1px solid var(--line); padding-top: 22px; }
+    .patient.visible { display: block; animation: rise .35s ease both; }
+    .patient-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
+    .data-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 5px; } .data-value { font-size: 14px; line-height: 1.4; white-space: pre-wrap; }
+    .sos-panel { border-color: #f0c8c3; background: #fffafa; min-height: 312px; }
+    .sos-head { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; } .alert-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 7px #fbe3e0; }
+    .sos-state { font-size: 12px; color: var(--red); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .empty { display: grid; place-items: center; min-height: 160px; color: var(--muted); font-size: 14px; text-align: center; border: 1px dashed #e8c7c3; border-radius: 10px; padding: 20px; }
+    .alert-data { display: none; } .alert-data.visible { display: block; animation: rise .35s ease both; }
+    .coordinates { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+    .coord { background: #fff; border: 1px solid #f0d9d5; border-radius: 9px; padding: 14px; } .coord strong { display: block; font-size: 18px; margin-top: 4px; }
+    .map-link { width: 100%; background: var(--red); color: #fff; }
+    .footer-link { display: inline-block; margin-top: 26px; color: var(--green); font-size: 12px; font-weight: 700; text-decoration: none; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 780px) { .topline { display: block; } .clock { text-align: left; margin-top: 12px; } .grid { grid-template-columns: 1fr; } }
+    @media (max-width: 460px) { header { display: block; } .header-note { margin-top: 8px; } .patient-grid, .coordinates { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header><div class="brand">ResQ <span>Band</span></div><div class="header-note">Emergency operations / Live local monitor</div></header>
+  <main class="page">
+    <div class="topline"><div><div class="eyebrow">Hospital intake</div><h1>One tap to the details that matter.</h1></div><div class="clock" id="clock"></div></div>
+    <section class="grid">
+      <article class="panel tap-panel">
+        <div><h2>NFC patient intake</h2><p>Simulate a band tap to retrieve the latest medical profile stored on this device.</p><div class="tap-icon">⌁</div></div>
+        <button class="tap" id="tapButton">Simulate NFC tap</button>
+        <div class="patient" id="patientCard"><div class="eyebrow">Patient record found</div><div class="patient-grid"><div><div class="data-label">Name</div><div class="data-value" id="patientName"></div></div><div><div class="data-label">Blood group</div><div class="data-value" id="patientBlood"></div></div><div><div class="data-label">Medications</div><div class="data-value" id="patientMeds"></div></div><div><div class="data-label">Surgeries</div><div class="data-value" id="patientSurgeries"></div></div><div><div class="data-label">Emergency contact</div><div class="data-value" id="patientContact"></div></div><div><div class="data-label">Relationship</div><div class="data-value" id="patientRelationship"></div></div></div></div>
+      </article>
+      <article class="panel sos-panel">
+        <div class="sos-head"><span class="alert-dot"></span><span class="sos-state" id="sosState">Monitoring for SOS</span></div>
+        <h2>Ambulance dispatch</h2><p>The dashboard checks for new alerts every second.</p>
+        <div class="empty" id="emptyAlert">No active SOS alert detected.<br>Location data will appear here automatically.</div>
+        <div class="alert-data" id="alertData"><div class="coordinates"><div class="coord"><div class="data-label">Latitude</div><strong id="latitude">—</strong></div><div class="coord"><div class="data-label">Longitude</div><strong id="longitude">—</strong></div></div><p id="alertTime"></p><a class="map-link" id="mapLink" target="_blank" rel="noopener">Open location in Google Maps ↗</a></div>
+      </article>
+    </section>
+    <a class="footer-link" href="index.html">← Return to patient registration</a>
+  </main>
+  <script>
+    const PROFILE_KEY = "resqPatient";
+    const SOS_KEY = "resqSOS";
+    const patientCard = document.getElementById("patientCard");
+    const emptyAlert = document.getElementById("emptyAlert");
+    const alertData = document.getElementById("alertData");
+    const sosState = document.getElementById("sosState");
+
+    function readJson(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
+    function valueOrFallback(value) { return value && String(value).trim() ? value : "Not provided"; }
+
+    document.getElementById("tapButton").addEventListener("click", () => {
+      const profile = readJson(PROFILE_KEY);
+      if (!profile) { patientCard.classList.add("visible"); patientCard.innerHTML = "<p>No patient profile found. Register details on the patient page first.</p>"; return; }
+      document.getElementById("patientName").textContent = valueOrFallback(profile.name);
+      document.getElementById("patientBlood").textContent = valueOrFallback(profile.bloodGroup);
+      document.getElementById("patientMeds").textContent = valueOrFallback(profile.medications);
+      document.getElementById("patientSurgeries").textContent = valueOrFallback(profile.surgeries);
+      document.getElementById("patientContact").textContent = valueOrFallback(profile.emergencyContact);
+      document.getElementById("patientRelationship").textContent = valueOrFallback(profile.relationship);
+      patientCard.classList.add("visible");
+    });
+
+    function checkForSos() {
+      const sos = readJson(SOS_KEY);
+      if (!sos || typeof sos.latitude !== "number" || typeof sos.longitude !== "number") return;
+      emptyAlert.style.display = "none";
+      alertData.classList.add("visible");
+      sosState.textContent = "SOS alert active";
+      document.getElementById("latitude").textContent = sos.latitude.toFixed(6);
+      document.getElementById("longitude").textContent = sos.longitude.toFixed(6);
+      document.getElementById("alertTime").textContent = `Received ${new Date(sos.timestamp).toLocaleString()} · Accuracy ±${Math.round(sos.accuracy || 0)}m`;
+      document.getElementById("mapLink").href = `https://www.google.com/maps/search/?api=1&query=${sos.latitude},${sos.longitude}`;
+    }
+    function updateClock() { document.getElementById("clock").textContent = `Local time · ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`; }
+    checkForSos(); updateClock(); setInterval(checkForSos, 1000); setInterval(updateClock, 1000);
+  </script>
+</body>
+</html>
